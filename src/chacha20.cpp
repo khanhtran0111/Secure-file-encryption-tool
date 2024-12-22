@@ -68,7 +68,7 @@ void chachaProcess(const uint32_t initialState[16], const vector<uint8_t>& input
     }
 }
 
-void processFile(const string& inputFilePath, const string& outputFilePath, const uint8_t key[32], const uint8_t nonce[12], bool encrypt) {
+void processFile(const string& inputFilePath, const string& outputFilePath, const uint8_t key[32], const uint8_t nonce[12], bool encrypt, bool outputHex = false) {
     ifstream inputFile(inputFilePath, ios::binary);
     if (!inputFile) {
         cerr << "Error: Cannot open input file!" << endl;
@@ -80,26 +80,40 @@ void processFile(const string& inputFilePath, const string& outputFilePath, cons
     uint32_t initialState[16];
     initializeState(initialState, key, nonce, 0);
     chachaProcess(initialState, input, output);
-    ofstream outputFile(outputFilePath, ios::binary);
-    if (!outputFile) {
-        cerr << "Error: Cannot open output file!" << endl;
-        return;
+    if (outputHex) {
+        ofstream outputFile(outputFilePath);
+        if (!outputFile) {
+            cerr << "Error: Cannot open output file!" << endl;
+            return;
+        }
+        for (uint8_t byte : output) {
+            outputFile << hex << setw(2) << setfill('0') << static_cast<int>(byte) << " ";
+        }
+        outputFile.close();
+        cout << (encrypt ? "Encryption" : "Decryption") << " completed in hex. Output saved to " << outputFilePath << endl;
+    } else {
+        ofstream outputFile(outputFilePath, ios::binary);
+        if (!outputFile) {
+            cerr << "Error: Cannot open output file!" << endl;
+            return;
+        }
+        outputFile.write(reinterpret_cast<char*>(output.data()), output.size());
+        outputFile.close();
+        cout << (encrypt ? "Encryption" : "Decryption") << " completed. Output saved to " << outputFilePath << endl;
     }
-    outputFile.write(reinterpret_cast<char*>(output.data()), output.size());
-    outputFile.close();
-
-    cout << (encrypt ? "Encryption" : "Decryption") << " completed. Output saved to " << outputFilePath << endl;
 }
 
+
 int main(int argc, char* argv[]) {
-    if (argc != 4) {
-        cerr << "Usage: chacha20_file_processor <encrypt|decrypt> <input_file> <output_file>" << endl;
+    if (argc < 4 || argc > 5) {
+        cerr << "Usage: chacha20_file_processor <encrypt|decrypt> <input_file> <output_file> [hex]" << endl;
         return 1;
     }
 
     string operation = argv[1];
     string inputFilePath = argv[2];
     string outputFilePath = argv[3];
+    bool outputHex = (argc == 5 && string(argv[4]) == "hex");
 
     uint8_t key[32];
     uint8_t nonce[12];
@@ -107,9 +121,9 @@ int main(int argc, char* argv[]) {
     for (int i = 0; i < 12; ++i) nonce[i] = i;
 
     if (operation == "encrypt") {
-        processFile(inputFilePath, outputFilePath, key, nonce, true);
+        processFile(inputFilePath, outputFilePath, key, nonce, true, outputHex);
     } else if (operation == "decrypt") {
-        processFile(inputFilePath, outputFilePath, key, nonce, false);
+        processFile(inputFilePath, outputFilePath, key, nonce, false, outputHex);
     } else {
         cerr << "Invalid operation: Use 'encrypt' or 'decrypt'" << endl;
         return 1;
