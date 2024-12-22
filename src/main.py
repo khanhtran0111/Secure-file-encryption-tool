@@ -4,7 +4,7 @@ from tkinter import Tk
 from tkinter.filedialog import askopenfilename, asksaveasfilename
 
 def main():
-    Tk().withdraw()  # Hide the root window
+    Tk().withdraw()
 
     print("File Encryption/Decryption Interface")
     print("1. Encrypt a file")
@@ -22,13 +22,20 @@ def main():
     if not output_file:
         print("No output file selected!")
         return
-    cpp_executable = "./chacha20_file_processor.exe" 
+    output_hex = False
+    if choice == '1':  # Encryption
+        hex_choice = input("Output in hexadecimal format? (y/n): ").lower()
+        output_hex = (hex_choice == 'y')
+    operation = "encrypt" if choice == '1' else "decrypt"
+    cpp_executable = "./chacha20_file_processor.exe"
     if not os.path.exists(cpp_executable):
         print(f"Error: C++ executable '{cpp_executable}' not found!")
         return
-    operation = "encrypt" if choice == '1' else "decrypt"
+    command = [cpp_executable, operation, input_file, output_file]
+    if output_hex:
+        command.append("hex")
     try:
-        subprocess.run([cpp_executable, operation, input_file, output_file], check=True)
+        subprocess.run(command, check=True)
         print(f"File {operation}ion completed successfully!")
     except subprocess.CalledProcessError as e:
         print(f"Error during {operation}ion: {e}")
