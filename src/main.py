@@ -1,50 +1,37 @@
-import ctypes
 import os
+import subprocess
+from tkinter import Tk
+from tkinter.filedialog import askopenfilename, asksaveasfilename
 
-# Load the C++ shared library
-lib = ctypes.CDLL(os.path.abspath("libchacha20.so"))
+def main():
+    Tk().withdraw()  # Hide the root window
 
-# Define the function prototypes
-lib.encrypt.argtypes = [ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint8), ctypes.c_size_t, ctypes.POINTER(ctypes.c_uint8)]
-lib.encrypt.restype = None
+    print("File Encryption/Decryption Interface")
+    print("1. Encrypt a file")
+    print("2. Decrypt a file")
+    choice = input("Enter your choice (1 or 2): ")
 
-lib.decrypt.argtypes = [ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint8), ctypes.c_size_t, ctypes.POINTER(ctypes.c_uint8)]
-lib.decrypt.restype = None
+    if choice not in ['1', '2']:
+        print("Invalid choice!")
+        return
+    input_file = askopenfilename(title="Select input file")
+    if not input_file:
+        print("No input file selected!")
+        return
+    output_file = asksaveasfilename(title="Select output file")
+    if not output_file:
+        print("No output file selected!")
+        return
+    cpp_executable = "./chacha20_file_processor.exe" 
+    if not os.path.exists(cpp_executable):
+        print(f"Error: C++ executable '{cpp_executable}' not found!")
+        return
+    operation = "encrypt" if choice == '1' else "decrypt"
+    try:
+        subprocess.run([cpp_executable, operation, input_file, output_file], check=True)
+        print(f"File {operation}ion completed successfully!")
+    except subprocess.CalledProcessError as e:
+        print(f"Error during {operation}ion: {e}")
 
-def encrypt_file(input_file, output_file, key, nonce):
-    with open(input_file, 'rb') as f:
-        plaintext = f.read()
-    
-    key_array = (ctypes.c_uint8 * len(key))(*key)
-    nonce_array = (ctypes.c_uint8 * len(nonce))(*nonce)
-    plaintext_array = (ctypes.c_uint8 * len(plaintext))(*plaintext)
-    ciphertext_array = (ctypes.c_uint8 * len(plaintext))()
-
-    lib.encrypt(key_array, nonce_array, plaintext_array, len(plaintext), ciphertext_array)
-    
-    with open(output_file, 'wb') as f:
-        f.write(bytearray(ciphertext_array))
-
-def decrypt_file(input_file, output_file, key, nonce):
-    with open(input_file, 'rb') as f:
-        ciphertext = f.read()
-    
-    key_array = (ctypes.c_uint8 * len(key))(*key)
-    nonce_array = (ctypes.c_uint8 * len(nonce))(*nonce)
-    ciphertext_array = (ctypes.c_uint8 * len(ciphertext))(*ciphertext)
-    plaintext_array = (ctypes.c_uint8 * len(ciphertext))()
-
-    lib.decrypt(key_array, nonce_array, ciphertext_array, len(ciphertext), plaintext_array)
-    
-    with open(output_file, 'wb') as f:
-        f.write(bytearray(plaintext_array))
-
-# Example usage
-key = bytes([i for i in range(32)])  # Create key as in the C++ code
-nonce = bytes([i for i in range(12)])  # Create nonce as in the C++ code
-
-# Encrypt the file
-encrypt_file('file.txt', 'file.enc', key, nonce)
-
-# Decrypt the file
-decrypt_file('file.enc', 'file.dec', key, nonce)
+if __name__ == "__main__":
+    main()
