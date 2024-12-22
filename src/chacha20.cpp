@@ -1,4 +1,4 @@
-#include<bits/stdc++.h>
+#include <bits/stdc++.h>
 using namespace std;
 
 const uint32_t CONSTANTS[4] = {0x61707865, 0x3320646E, 0x79622D32, 0x6B206574};
@@ -37,7 +37,7 @@ void chachaProcess(const uint32_t initialState[16], const vector<uint8_t>& input
     memcpy(state, initialState, sizeof(state)); 
 
     while (offset < input.size()) {
-        // Sinh keystream
+        // Generate keystream
         memcpy(block, state, sizeof(state));
         for (int i = 0; i < 10; ++i) {
             quarterRound(block[0], block[4], block[8], block[12]);
@@ -68,18 +68,40 @@ void chachaProcess(const uint32_t initialState[16], const vector<uint8_t>& input
     }
 }
 
-void processFile(const string& inputFilePath, const string& outputFilePath, const uint8_t key[32], const uint8_t nonce[12], bool encrypt, bool outputHex = false) {
-    ifstream inputFile(inputFilePath, ios::binary);
-    if (!inputFile) {
-        cerr << "Error: Cannot open input file!" << endl;
+void processHexToBinary(const string& hexFilePath, vector<uint8_t>& binaryOutput) {
+    ifstream hexFile(hexFilePath);
+    if (!hexFile) {
+        cerr << "Error: Cannot open hex file!" << endl;
         return;
     }
-    vector<uint8_t> input((istreambuf_iterator<char>(inputFile)), istreambuf_iterator<char>());
-    inputFile.close();
+    string hexByte;
+    while (hexFile >> hexByte) {
+        uint8_t byte = static_cast<uint8_t>(stoi(hexByte, nullptr, 16));
+        binaryOutput.push_back(byte);
+    }
+    hexFile.close();
+}
+
+void processFile(const string& inputFilePath, const string& outputFilePath, const uint8_t key[32], const uint8_t nonce[12], bool encrypt, bool outputHex = false) {
+    vector<uint8_t> input;
+
+    if (!encrypt && outputHex) {
+        processHexToBinary(inputFilePath, input);
+    } else {
+        ifstream inputFile(inputFilePath, ios::binary);
+        if (!inputFile) {
+            cerr << "Error: Cannot open input file!" << endl;
+            return;
+        }
+        input.assign((istreambuf_iterator<char>(inputFile)), istreambuf_iterator<char>());
+        inputFile.close();
+    }
+
     vector<uint8_t> output;
     uint32_t initialState[16];
     initializeState(initialState, key, nonce, 0);
     chachaProcess(initialState, input, output);
+
     if (outputHex) {
         ofstream outputFile(outputFilePath);
         if (!outputFile) {
@@ -102,7 +124,6 @@ void processFile(const string& inputFilePath, const string& outputFilePath, cons
         cout << (encrypt ? "Encryption" : "Decryption") << " completed. Output saved to " << outputFilePath << endl;
     }
 }
-
 
 int main(int argc, char* argv[]) {
     if (argc < 4 || argc > 5) {
