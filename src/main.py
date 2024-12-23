@@ -27,7 +27,7 @@ def main():
         hex_choice = input("Output in hexadecimal format? (y/n): ").lower()
         output_hex = (hex_choice == 'y')
     operation = "encrypt" if choice == '1' else "decrypt"
-    cpp_executable = "./chacha20_file_processor.exe"
+    cpp_executable = "./chacha20_file_processor"
     if not os.path.exists(cpp_executable):
         print(f"Error: C++ executable '{cpp_executable}' not found!")
         return
