@@ -1,4 +1,6 @@
 #include <bits/stdc++.h>
+#include <random>
+#include <chrono>
 using namespace std;
 
 const uint32_t CONSTANTS[4] = {0x61707865, 0x3320646E, 0x79622D32, 0x6B206574};
@@ -138,9 +140,24 @@ int main(int argc, char* argv[]) {
 
     uint8_t key[32];
     uint8_t nonce[12];
-    for (int i = 0; i < 32; ++i) key[i] = i;
-    for (int i = 0; i < 12; ++i) nonce[i] = i;
-
+    // for (int i = 0; i < 32; i++) key[i] = i;
+    // for (int i = 0; i < 12; i++) nonce[i] = i;
+    random_device rd;
+    mt19937_64 gen(rd());
+    uniform_int_distribution<uint8_t> dis(0,255);
+    for (int i = 0; i < 32; i++) key[i] = dis(gen);
+    for (int i = 0; i < 12; i++) nonce[i] = dis(gen);
+    //print the key
+    // cout<<"Key: ";
+    // for(int i=0; i < 32; i++) {
+    //     cout<<hex<<setw(2)<<setfill('0')<<static_cast<int>(key[i]);
+    // }
+    cout<<'\n';
+    //print the nonce
+    // cout<<"Noncce: ";
+    // for(int i=0; i , 12; i++) {
+    //     cout<<hex<<setw(2)<<setfill('0')<<static_cast<int>(nonce[i]);
+    // }
     if (operation == "encrypt") {
         processFile(inputFilePath, outputFilePath, key, nonce, true, outputHex);
     } else if (operation == "decrypt") {
