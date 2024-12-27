@@ -6,7 +6,7 @@ from tkinter import PhotoImage
 from PIL import Image
 from tkinterdnd2 import DND_FILES, TkinterDnD
 
-def encrypt_file(input_file=None):
+def encrypt_file(input_file=None, output_format="bin"):
     if not input_file:
         input_file = filedialog.askopenfilename(title="Select File to Encrypt")
     if not input_file:
@@ -18,14 +18,13 @@ def encrypt_file(input_file=None):
         messagebox.showwarning("No Output File Selected", "Please specify the output file for encryption.")
         return
 
-    output_hex = messagebox.askyesno("Hexadecimal Output", "Do you want the output in hexadecimal format?")
     cpp_executable = "./chacha20_file_processor"
     if not os.path.exists(cpp_executable):
         messagebox.showerror("Executable Not Found", f"C++ executable '{cpp_executable}' not found!")
         return
 
     command = [cpp_executable, "encrypt", input_file, output_file]
-    if output_hex:
+    if output_format == "hex":
         command.append("hex")
     
     try:
@@ -34,7 +33,7 @@ def encrypt_file(input_file=None):
     except subprocess.CalledProcessError as e:
         messagebox.showerror("Error", f"Error during encryption: {e}")
 
-def decrypt_file(input_file=None):
+def decrypt_file(input_file=None, output_format="bin"):
     if not input_file:
         input_file = filedialog.askopenfilename(title="Select File to Decrypt")
     if not input_file:
@@ -52,6 +51,8 @@ def decrypt_file(input_file=None):
         return
 
     command = [cpp_executable, "decrypt", input_file, output_file]
+    if output_format == "hex":
+        command.append("hex")
     
     try:
         subprocess.run(command, check=True)
@@ -73,8 +74,13 @@ def create_app():
 
     tk.Label(app, text="File Encryption/Decryption Tool", font=("Arial", 16)).pack(pady=10)
 
-    tk.Button(app, text="Encrypt File", command=encrypt_file, width=20, height=2).pack(pady=10)
-    tk.Button(app, text="Decrypt File", command=decrypt_file, width=20, height=2).pack(pady=10)
+    output_format = tk.StringVar(value="bin")
+
+    tk.Checkbutton(app, text="Hex", variable=output_format, onvalue="hex", offvalue="bin").pack()
+    tk.Checkbutton(app, text="Bin", variable=output_format, onvalue="bin", offvalue="hex").pack()
+
+    tk.Button(app, text="Encrypt File", command=lambda: encrypt_file(output_format=output_format.get()), width=20, height=2).pack(pady=10)
+    tk.Button(app, text="Decrypt File", command=lambda: decrypt_file(output_format=output_format.get()), width=20, height=2).pack(pady=10)
 
     drop_box = tk.Label(app, text="Drag and Drop Files Here", relief="sunken", width=40, height=10)
     drop_box.pack(pady=20)
@@ -83,9 +89,9 @@ def create_app():
         file_path = event.data
         if file_path:
             if messagebox.askyesno("Encrypt or Decrypt", "Do you want to encrypt the file?"):
-                encrypt_file(file_path)
+                encrypt_file(file_path, output_format.get())
             else:
-                decrypt_file(file_path)
+                decrypt_file(file_path, output_format.get())
 
     drop_box.drop_target_register(DND_FILES)
     drop_box.dnd_bind('<<Drop>>', drop)
