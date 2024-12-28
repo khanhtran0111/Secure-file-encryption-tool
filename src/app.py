@@ -8,26 +8,13 @@ from tkinterdnd2 import DND_FILES, TkinterDnD
 import hashlib
 
 def derive_key_and_nonce(input_string):
-    """
-    Derive a 32-byte key and a 12-byte nonce from an input string using SHA-256.
-    
-    Args:
-        input_string (str): The input string to derive the key and nonce.
-    
-    Returns:
-        tuple: A tuple containing a 32-byte key and a 12-byte nonce.
-    """
     if not input_string:
         raise ValueError("Input string must not be empty.")
-    # Hash the input string with SHA-256 to produce 32 bytes
     hash_object = hashlib.sha256(input_string.encode())
     hash_bytes = hash_object.digest()
-    # Use the first 32 bytes for the key
     key = hash_bytes[:32]
-    # Create an additional hash for the nonce to avoid overlaps
     nonce_hash_object = hashlib.sha256((input_string + "nonce").encode())
     nonce_bytes = nonce_hash_object.digest()
-    # Use the first 12 bytes for the nonce
     nonce = nonce_bytes[:12]
     return key, nonce
 
@@ -116,7 +103,7 @@ def create_app():
     tk.Label(app, text="File Encryption/Decryption Tool", font=("Arial", 16)).pack(pady=10)
 
     tk.Label(app, text="Enter a String to Derive Key and Nonce:").pack(pady=5)
-    string_entry = tk.Entry(app, width=50)
+    string_entry = tk.Entry(app, show="•", width=50)
     string_entry.pack(pady=5)
 
     def encrypt_with_derived_key_and_nonce():
