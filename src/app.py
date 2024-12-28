@@ -5,8 +5,16 @@ from tkinter import filedialog, messagebox
 from tkinter import PhotoImage
 from PIL import Image
 from tkinterdnd2 import DND_FILES, TkinterDnD
+import hashlib
 
-def encrypt_file(input_file=None, output_format="bin"):
+def derive_key_and_nonce(input_string):
+    hash_object = hashlib.sha256(input_string.encode())
+    hash_bytes = hash_object.digest()
+    key = hash_bytes[:32]
+    nonce = hash_bytes[32:32+12]
+    return key, nonce
+
+def encrypt_file(input_file=None, output_format="bin", key=None, nonce=None):
     if not input_file:
         input_file = filedialog.askopenfilename(title="Select File to Encrypt")
     if not input_file:
@@ -18,12 +26,20 @@ def encrypt_file(input_file=None, output_format="bin"):
         messagebox.showwarning("No Output File Selected", "Please specify the output file for encryption.")
         return
 
+    if not key or len(key) != 32:
+        messagebox.showwarning("Invalid Key", "Please enter a valid key.")
+        return
+
+    if not nonce or len(nonce) != 12:
+        messagebox.showwarning("Invalid Nonce", "Please enter a valid nonce.")
+        return
+
     cpp_executable = "./chacha20_file_processor"
     if not os.path.exists(cpp_executable):
         messagebox.showerror("Executable Not Found", f"C++ executable '{cpp_executable}' not found!")
         return
 
-    command = [cpp_executable, "encrypt", input_file, output_file]
+    command = [cpp_executable, "encrypt", input_file, output_file, key.hex(), nonce.hex()]
     if output_format == "hex":
         command.append("hex")
     
@@ -33,7 +49,7 @@ def encrypt_file(input_file=None, output_format="bin"):
     except subprocess.CalledProcessError as e:
         messagebox.showerror("Error", f"Error during encryption: {e}")
 
-def decrypt_file(input_file=None, output_format="bin"):
+def decrypt_file(input_file=None, output_format="bin", key=None, nonce=None):
     if not input_file:
         input_file = filedialog.askopenfilename(title="Select File to Decrypt")
     if not input_file:
@@ -45,12 +61,20 @@ def decrypt_file(input_file=None, output_format="bin"):
         messagebox.showwarning("No Output File Selected", "Please specify the output file for decryption.")
         return
 
+    if not key or len(key) != 32:
+        messagebox.showwarning("Invalid Key", "Please enter a valid key.")
+        return
+
+    if not nonce or len(nonce) != 12:
+        messagebox.showwarning("Invalid Nonce", "Please enter a valid nonce.")
+        return
+
     cpp_executable = "./chacha20_file_processor"
     if not os.path.exists(cpp_executable):
         messagebox.showerror("Executable Not Found", f"C++ executable '{cpp_executable}' not found!")
         return
 
-    command = [cpp_executable, "decrypt", input_file, output_file]
+    command = [cpp_executable, "decrypt", input_file, output_file, key.hex(), nonce.hex()]
     if output_format == "hex":
         command.append("hex")
     
@@ -74,13 +98,28 @@ def create_app():
 
     tk.Label(app, text="File Encryption/Decryption Tool", font=("Arial", 16)).pack(pady=10)
 
-    output_format = tk.StringVar(value="bin")
+    tk.Label(app, text="Enter a String to Derive Key and Nonce:").pack(pady=5)
+    string_entry = tk.Entry(app, width=50)
+    string_entry.pack(pady=5)
 
-    tk.Checkbutton(app, text="Hex", variable=output_format, onvalue="hex", offvalue="bin").pack()
-    tk.Checkbutton(app, text="Bin", variable=output_format, onvalue="bin", offvalue="hex").pack()
+    def encrypt_with_derived_key_and_nonce():
+        input_string = string_entry.get()
+        if not input_string:
+            messagebox.showwarning("Input Required", "You have to fill the string.")
+            return
+        key, nonce = derive_key_and_nonce(input_string)
+        encrypt_file(output_format="bin", key=key, nonce=nonce)
 
-    tk.Button(app, text="Encrypt File", command=lambda: encrypt_file(output_format=output_format.get()), width=20, height=2).pack(pady=10)
-    tk.Button(app, text="Decrypt File", command=lambda: decrypt_file(output_format=output_format.get()), width=20, height=2).pack(pady=10)
+    def decrypt_with_derived_key_and_nonce():
+        input_string = string_entry.get()
+        if not input_string:
+            messagebox.showwarning("Input Required", "You have to fill the string.")
+            return
+        key, nonce = derive_key_and_nonce(input_string)
+        decrypt_file(output_format="bin", key=key, nonce=nonce)
+
+    tk.Button(app, text="Encrypt File", command=encrypt_with_derived_key_and_nonce, width=20, height=2).pack(pady=10)
+    tk.Button(app, text="Decrypt File", command=decrypt_with_derived_key_and_nonce, width=20, height=2).pack(pady=10)
 
     drop_box = tk.Label(app, text="Drag and Drop Files Here", relief="sunken", width=40, height=10)
     drop_box.pack(pady=20)
@@ -88,10 +127,15 @@ def create_app():
     def drop(event):
         file_path = event.data
         if file_path:
+            input_string = string_entry.get()
+            if not input_string:
+                messagebox.showwarning("Input Required", "You have to fill the string.")
+                return
+            key, nonce = derive_key_and_nonce(input_string)
             if messagebox.askyesno("Encrypt or Decrypt", "Do you want to encrypt the file?"):
-                encrypt_file(file_path, output_format.get())
+                encrypt_file(file_path, "bin", key, nonce)
             else:
-                decrypt_file(file_path, output_format.get())
+                decrypt_file(file_path, "bin", key, nonce)
 
     drop_box.drop_target_register(DND_FILES)
     drop_box.dnd_bind('<<Drop>>', drop)

@@ -127,37 +127,42 @@ void processFile(const string& inputFilePath, const string& outputFilePath, cons
     }
 }
 
+vector<uint8_t> hexStringToBytes(const string &hex) {
+    vector<uint8_t> bytes;
+    for (size_t i = 0; i < hex.length(); i += 2) {
+        string byteString = hex.substr(i, 2);
+        uint8_t byte = static_cast<uint8_t>(strtol(byteString.c_str(), nullptr, 16));
+        bytes.push_back(byte);
+    }
+    return bytes;
+}
+
 int main(int argc, char* argv[]) {
-    if (argc < 4 || argc > 5) {
-        cerr << "Usage: chacha20_file_processor <encrypt|decrypt> <input_file> <output_file> [hex]" << endl;
+    if (argc < 6 || argc > 7) {
+        cerr << "Usage: chacha20_file_processor <encrypt|decrypt> <input_file> <output_file> <key> <nonce> [hex]" << endl;
         return 1;
     }
 
     string operation = argv[1];
     string inputFilePath = argv[2];
     string outputFilePath = argv[3];
-    bool outputHex = (argc == 5 && string(argv[4]) == "hex");
+    string keyHex = argv[4];
+    string nonceHex = argv[5];
+    bool outputHex = (argc == 7 && string(argv[6]) == "hex");
+
+    if (keyHex.length() != 64 || nonceHex.length() != 24) {
+        cerr << "Invalid key or nonce length. Key must be 32 bytes (64 hex characters) and nonce must be 12 bytes (24 hex characters)." << endl;
+        return 1;
+    }
+
+    vector<uint8_t> keyBytes = hexStringToBytes(keyHex);
+    vector<uint8_t> nonceBytes = hexStringToBytes(nonceHex);
 
     uint8_t key[32];
     uint8_t nonce[12];
-    // for (int i = 0; i < 32; i++) key[i] = i;
-    // for (int i = 0; i < 12; i++) nonce[i] = i;
-    random_device rd;
-    mt19937_64 gen(rd());
-    uniform_int_distribution<uint8_t> dis(0,255);
-    for (int i = 0; i < 32; i++) key[i] = dis(gen);
-    for (int i = 0; i < 12; i++) nonce[i] = dis(gen);
-    //print the key
-    // cout<<"Key: ";
-    // for(int i=0; i < 32; i++) {
-    //     cout<<hex<<setw(2)<<setfill('0')<<static_cast<int>(key[i]);
-    // }
-    cout<<'\n';
-    //print the nonce
-    // cout<<"Noncce: ";
-    // for(int i=0; i , 12; i++) {
-    //     cout<<hex<<setw(2)<<setfill('0')<<static_cast<int>(nonce[i]);
-    // }
+    copy(keyBytes.begin(), keyBytes.end(), key);
+    copy(nonceBytes.begin(), nonceBytes.end(), nonce);
+
     if (operation == "encrypt") {
         processFile(inputFilePath, outputFilePath, key, nonce, true, outputHex);
     } else if (operation == "decrypt") {
