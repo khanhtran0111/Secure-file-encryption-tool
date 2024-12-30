@@ -1,4 +1,10 @@
 # Secure-file-encryption-system
+---
+Name: Tran Gia Khanh
+Student's ID: 23021599
+University: University of Engineering and Technology - Vietnam National University Hanoi
+
+---
 
 ## Overview
 The Secure-file-encryption-system is a tool designed to encrypt and decrypt files using the ChaCha20 encryption algorithm. This system provides a secure way to protect sensitive data by converting files into an encrypted format and allowing them to be decrypted back to their original form.
@@ -13,7 +19,6 @@ The Secure-file-encryption-system is a tool designed to encrypt and decrypt file
 
 ### Prerequisites
 - Python 3.12
-- Required Python packages (install using `pip install -r requirements.txt`)
 - C++ compiler (for compiling the C++ code)
 
 ### Setup
@@ -23,14 +28,7 @@ The Secure-file-encryption-system is a tool designed to encrypt and decrypt file
     cd Secure-file-encryption-system
     ```
 
-2. Set up the Python virtual environment:
-    ```sh
-    python3 -m venv venv
-    source venv/bin/activate
-    pip install -r requirements.txt
-    ```
-
-3. Compile the C++ code:
+2. Compile the C++ code:
     ```sh
     g++ -o chacha20_file_processor src/chacha20.cpp
     ```
