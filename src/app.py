@@ -7,6 +7,8 @@ from PIL import Image
 from tkinterdnd2 import DND_FILES, TkinterDnD
 import hashlib
 
+path_cpp = "./chacha20_file_processor.exe"
+
 def derive_key_and_nonce(input_string):
     if not input_string:
         raise ValueError("Input string must not be empty.")
@@ -38,7 +40,7 @@ def encrypt_file(input_file=None, output_format="bin", key=None, nonce=None):
         messagebox.showwarning("Invalid Nonce", "Please enter a valid nonce.")
         return
 
-    cpp_executable = "./chacha20_file_processor"
+    cpp_executable = path_cpp
     if not os.path.exists(cpp_executable):
         messagebox.showerror("Executable Not Found", f"C++ executable '{cpp_executable}' not found!")
         return
@@ -52,6 +54,8 @@ def encrypt_file(input_file=None, output_format="bin", key=None, nonce=None):
         messagebox.showinfo("Success", f"File encrypted successfully!\nSaved at: {output_file}")
     except subprocess.CalledProcessError as e:
         messagebox.showerror("Error", f"Error during encryption: {e}")
+    except Exception as e:
+        messagebox.showerror("Error", f"Unexpected error: {e}")
 
 def decrypt_file(input_file=None, output_format="bin", key=None, nonce=None):
     if not input_file:
@@ -73,7 +77,7 @@ def decrypt_file(input_file=None, output_format="bin", key=None, nonce=None):
         messagebox.showwarning("Invalid Nonce", "Please enter a valid nonce.")
         return
 
-    cpp_executable = "./chacha20_file_processor"
+    cpp_executable = path_cpp
     if not os.path.exists(cpp_executable):
         messagebox.showerror("Executable Not Found", f"C++ executable '{cpp_executable}' not found!")
         return
@@ -102,7 +106,7 @@ def create_app():
 
     tk.Label(app, text="File Encryption/Decryption Tool", font=("Arial", 16)).pack(pady=10)
 
-    tk.Label(app, text="Enter a String to Derive Key and Nonce:").pack(pady=5)
+    tk.Label(app, text="Enter your secret string:").pack(pady=5)
     string_entry = tk.Entry(app, show="•", width=50)
     string_entry.pack(pady=5)
 
