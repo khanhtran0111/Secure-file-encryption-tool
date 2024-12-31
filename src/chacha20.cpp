@@ -73,7 +73,6 @@ void chachaProcess(const uint32_t initialState[16], const vector<uint8_t>& input
 void processHexToBinary(const string& hexFilePath, vector<uint8_t>& binaryOutput) {
     ifstream hexFile(hexFilePath);
     if (!hexFile) {
-        cerr << "Error: Cannot open hex file!" << endl;
         return;
     }
     string hexByte;
@@ -92,7 +91,6 @@ void processFile(const string& inputFilePath, const string& outputFilePath, cons
     } else {
         ifstream inputFile(inputFilePath, ios::binary);
         if (!inputFile) {
-            cerr << "Error: Cannot open input file!" << endl;
             return;
         }
         input.assign((istreambuf_iterator<char>(inputFile)), istreambuf_iterator<char>());
@@ -107,7 +105,6 @@ void processFile(const string& inputFilePath, const string& outputFilePath, cons
     if (outputHex) {
         ofstream outputFile(outputFilePath);
         if (!outputFile) {
-            cerr << "Error: Cannot open output file!" << endl;
             return;
         }
         for (uint8_t byte : output) {
@@ -118,7 +115,6 @@ void processFile(const string& inputFilePath, const string& outputFilePath, cons
     } else {
         ofstream outputFile(outputFilePath, ios::binary);
         if (!outputFile) {
-            cerr << "Error: Cannot open output file!" << endl;
             return;
         }
         outputFile.write(reinterpret_cast<char*>(output.data()), output.size());
@@ -139,7 +135,6 @@ vector<uint8_t> hexStringToBytes(const string &hex) {
 
 int main(int argc, char* argv[]) {
     if (argc < 6 || argc > 7) {
-        cerr << "Usage: chacha20_file_processor <encrypt|decrypt> <input_file> <output_file> <key> <nonce> [hex]" << endl;
         return 1;
     }
 
@@ -151,7 +146,6 @@ int main(int argc, char* argv[]) {
     bool outputHex = (argc == 7 && string(argv[6]) == "hex");
 
     if (keyHex.length() != 64 || nonceHex.length() != 24) {
-        cerr << "Invalid key or nonce length. Key must be 32 bytes (64 hex characters) and nonce must be 12 bytes (24 hex characters)." << endl;
         return 1;
     }
 
