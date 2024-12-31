@@ -22,6 +22,12 @@ The Secure-file-encryption-system is a tool designed to encrypt and decrypt file
 ### Prerequisites
 - Python 3.12
 - C++ compiler (for compiling the C++ code)
+- Install library 
+    ```sh
+    pip install pycryptodome
+    pip install tk
+    ```
+
 
 ### Setup
 1. Clone the repository:
