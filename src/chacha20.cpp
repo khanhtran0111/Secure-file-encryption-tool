@@ -162,7 +162,6 @@ int main(int argc, char* argv[]) {
     } else if (operation == "decrypt") {
         processFile(inputFilePath, outputFilePath, key, nonce, false, outputHex);
     } else {
-        cerr << "Invalid operation: Use 'encrypt' or 'decrypt'" << endl;
         return 1;
     }
 
