@@ -1,33 +1,13 @@
-# Secure-file-encryption-system
----
-Name: Tran Gia Khanh
-
-Student's ID: 23021599
-
-University: University of Engineering and Technology - Vietnam National University Hanoi
-
----
-
-## Overview
-The Secure-file-encryption-system is a tool designed to encrypt and decrypt files using the ChaCha20 encryption algorithm. This system provides a secure way to protect sensitive data by converting files into an encrypted format and allowing them to be decrypted back to their original form.
-
-## Features
-- Encrypt files using the ChaCha20 algorithm.
-- Decrypt files back to their original format.
-- Support for binary output formats.
-- Cross-platform compatibility with both Python and C++ implementations.
-
 ## How to Use
 
 ### Prerequisites
 - Python 3.12
 - C++ compiler (for compiling the C++ code)
-- Install library 
+- Install libraries:
     ```sh
     pip install pycryptodome
     pip install tk
     ```
-
 
 ### Setup
 1. Clone the repository:
@@ -50,7 +30,7 @@ The Secure-file-encryption-system is a tool designed to encrypt and decrypt file
     ```
 
 2. In the GUI, select the file you want to encrypt.
-3. Enter your secret key, then it will be convert to the encryption key (32 bytes) and nonce (12 bytes).
+3. Enter your secret key, which will be converted to the encryption key (32 bytes) and nonce (12 bytes).
 4. Choose the output format (binary).
 5. Click the "Encrypt" button.
 
@@ -61,6 +41,39 @@ The Secure-file-encryption-system is a tool designed to encrypt and decrypt file
     ```
 
 2. In the GUI, select the file you want to decrypt.
-3. Enter your previous secret key for encryption, then it will be convert to the encryption key (32 bytes) and nonce (12 bytes).
-4. Choose the output format (the format before encrypt).
+3. Enter your previous secret key for encryption, which will be converted to the encryption key (32 bytes) and nonce (12 bytes).
+4. Choose the output format (the format before encryption).
 5. Click the "Decrypt" button.
+
+### Example
+
+For example, I have an image that needs to be encrypted:
+
+![Max Verstappen image](rm/1.png)
+
+Next, I run the app:
+
+![Run app](rm/2.png)
+
+Now, you can see the main app. There is a box for you to enter your secret string for making the key and nonce for the algorithm. There are two buttons, `Encrypt File` and `Decrypt File`, for actions and a box where you can drag and drop your specific file.
+
+![App](rm/3.png)
+
+I will put my secret string in the box. For example, my string is `simply lovely`, then I choose `Encrypt File` and pick the file which is going to be encrypted.
+
+![Example](rm/4.png)
+
+And done!
+
+![Done](rm/5.png)
+
+The information after being encrypted will be saved in a file with the extension `.txt`.
+
+![Encrypted file](rm/6.png)
+
+If I want to see what that file is, I enter the secret string used for encryption, choose `Decrypt File`, and enter the name with the original file format (.jpg, .pdf, etc.).
+
+Boom, now I have two images, one is the original, and one is decrypted from the encrypted txt file.
+
+![Decrypted image 1](rm/8.png)
+![Decrypted image 2](rm/9.png)
