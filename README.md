@@ -4,6 +4,9 @@
 
 This project implements a secure file encryption system using the ChaCha20 encryption algorithm. It provides a reliable and efficient way to encrypt and decrypt files, ensuring data confidentiality and integrity. The application is designed to prioritize speed and security, making it suitable for protecting sensitive information in various environments.
 
+## Report
+
+Read more: [Chacha20 application in secure file encryption system on personal computer](UET_report.pdf)
 
 ## How to Use
 
