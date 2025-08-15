@@ -1,24 +1,17 @@
 import os
-import subprocess
 import tkinter as tk
 from tkinter import filedialog, messagebox
 from tkinter import PhotoImage
 from PIL import Image
 from tkinterdnd2 import DND_FILES, TkinterDnD
-import hashlib
 
-path_cpp = "./chacha20_file_processor.exe"
-
-def derive_key_and_nonce(input_string):
-    if not input_string:
-        raise ValueError("Input string must not be empty.")
-    hash_object = hashlib.sha256(input_string.encode())
-    hash_bytes = hash_object.digest()
-    key = hash_bytes[:32]
-    nonce_hash_object = hashlib.sha256((input_string + "nonce").encode())
-    nonce_bytes = nonce_hash_object.digest()
-    nonce = nonce_bytes[:12]
-    return key, nonce
+from encfmt_v2 import (
+    encrypt_file as enc_file_v2,
+    decrypt_file as dec_file_v2,
+    encrypt_folder_tar_then_encrypt as enc_folder_v2,
+    decrypt_to_folder as dec_folder_v2,
+    EncDecError
+)
 
 def encrypt_file(input_file=None, output_format="bin", key=None, nonce=None):
     if not input_file:
@@ -27,123 +20,208 @@ def encrypt_file(input_file=None, output_format="bin", key=None, nonce=None):
         messagebox.showwarning("No File Selected", "Please select a file to encrypt.")
         return
     
-    output_file = filedialog.asksaveasfilename(title="Save Encrypted File As")
+    output_file = filedialog.asksaveasfilename(
+        title="Save Encrypted File As",
+        defaultextension=".cc20",
+        filetypes=[("CC20 Encrypted", "*.cc20"), ("All files", "*.*")]
+    )
     if not output_file:
         messagebox.showwarning("No Output File Selected", "Please specify the output file for encryption.")
         return
 
-    if not key or len(key) != 32:
-        messagebox.showwarning("Invalid Key", "Please enter a valid key.")
-        return
-
-    if not nonce or len(nonce) != 12:
-        messagebox.showwarning("Invalid Nonce", "Please enter a valid nonce.")
-        return
-
-    cpp_executable = path_cpp
-    if not os.path.exists(cpp_executable):
-        messagebox.showerror("Executable Not Found", f"C++ executable '{cpp_executable}' not found!")
-        return
-
-    command = [cpp_executable, "encrypt", input_file, output_file, key.hex(), nonce.hex()]
-    if output_format == "hex":
-        command.append("hex")
-    
     try:
-        subprocess.run(command, check=True)
+        password = getattr(encrypt_file, '_current_password', '')
+        if not password:
+            messagebox.showwarning("No Password", "Please enter your secret password.")
+            return
+        
+        enc_file_v2(password, input_file, output_file)
         messagebox.showinfo("Success", f"File encrypted successfully!\nSaved at: {output_file}")
-    except subprocess.CalledProcessError as e:
+    except EncDecError as e:
         messagebox.showerror("Error", f"Error during encryption: {e}")
     except Exception as e:
         messagebox.showerror("Error", f"Unexpected error: {e}")
 
 def decrypt_file(input_file=None, output_format="bin", key=None, nonce=None):
     if not input_file:
-        input_file = filedialog.askopenfilename(title="Select File to Decrypt")
+        input_file = filedialog.askopenfilename(
+            title="Select File to Decrypt",
+            filetypes=[("CC20 Encrypted", "*.cc20"), ("All files", "*.*")]
+        )
     if not input_file:
         messagebox.showwarning("No File Selected", "Please select a file to decrypt.")
         return
     
-    output_file = filedialog.asksaveasfilename(title="Save Decrypted File As")
+    if input_file.endswith(".cc20"):
+        suggested_name = input_file[:-5]
+    else:
+        suggested_name = input_file + ".dec"
+    
+    output_file = filedialog.asksaveasfilename(
+        title="Save Decrypted File As",
+        initialfile=os.path.basename(suggested_name),
+        initialdir=os.path.dirname(suggested_name) if os.path.dirname(suggested_name) else None
+    )
     if not output_file:
         messagebox.showwarning("No Output File Selected", "Please specify the output file for decryption.")
         return
 
-    if not key or len(key) != 32:
-        messagebox.showwarning("Invalid Key", "Please enter a valid key.")
-        return
-
-    if not nonce or len(nonce) != 12:
-        messagebox.showwarning("Invalid Nonce", "Please enter a valid nonce.")
-        return
-
-    cpp_executable = path_cpp
-    if not os.path.exists(cpp_executable):
-        messagebox.showerror("Executable Not Found", f"C++ executable '{cpp_executable}' not found!")
-        return
-
-    command = [cpp_executable, "decrypt", input_file, output_file, key.hex(), nonce.hex()]
-    if output_format == "hex":
-        command.append("hex")
-    
     try:
-        subprocess.run(command, check=True)
+        password = getattr(decrypt_file, '_current_password', '')
+        if not password:
+            messagebox.showwarning("No Password", "Please enter your secret password.")
+            return
+        
+        dec_file_v2(password, input_file, output_file)
         messagebox.showinfo("Success", f"File decrypted successfully!\nSaved at: {output_file}")
-    except subprocess.CalledProcessError as e:
+    except EncDecError as e:
         messagebox.showerror("Error", f"Error during decryption: {e}")
+
+def encrypt_folder(folder_path):
+    if not folder_path:
+        folder_path = filedialog.askdirectory(title="Select Folder to Encrypt")
+    if not folder_path:
+        messagebox.showwarning("No Folder Selected", "Please select a folder to encrypt.")
+        return
+    
+    base_name = os.path.basename(folder_path.rstrip(os.sep)) or "output"
+    suggested_name = base_name + ".cc20"
+    
+    output_file = filedialog.asksaveasfilename(
+        title="Save Encrypted Archive As",
+        initialfile=suggested_name,
+        defaultextension=".cc20",
+        filetypes=[("CC20 Encrypted", "*.cc20"), ("All files", "*.*")]
+    )
+    if not output_file:
+        messagebox.showwarning("No Output File Selected", "Please specify the output file for encryption.")
+        return
+
+    try:
+        password = getattr(encrypt_folder, '_current_password', '')
+        if not password:
+            messagebox.showwarning("No Password", "Please enter your secret password.")
+            return
+        
+        enc_folder_v2(password, folder_path, output_file)
+        messagebox.showinfo("Success", f"Folder encrypted successfully!\nSaved at: {output_file}")
+    except EncDecError as e:
+        messagebox.showerror("Error", f"Error during folder encryption: {e}")
+    except Exception as e:
+        messagebox.showerror("Error", f"Unexpected error: {e}")
+
+def decrypt_archive_to_folder(enc_path):
+    if not enc_path:
+        enc_path = filedialog.askopenfilename(
+            title="Select Encrypted Archive",
+            filetypes=[("CC20 Encrypted", "*.cc20"), ("All files", "*.*")]
+        )
+    if not enc_path:
+        messagebox.showwarning("No File Selected", "Please select an encrypted archive.")
+        return
+    
+    output_dir = filedialog.askdirectory(title="Select Output Folder to Extract Files")
+    if not output_dir:
+        messagebox.showwarning("No Output Folder Selected", "Please select a folder to extract files.")
+        return
+
+    try:
+        password = getattr(decrypt_archive_to_folder, '_current_password', '')
+        if not password:
+            messagebox.showwarning("No Password", "Please enter your secret password.")
+            return
+        
+        dec_folder_v2(password, enc_path, output_dir)
+        messagebox.showinfo("Success", f"Archive decrypted successfully!\nExtracted to: {output_dir}")
+    except EncDecError as e:
+        messagebox.showerror("Error", f"Error during archive decryption: {e}")
+    except Exception as e:
+        messagebox.showerror("Error", f"Unexpected error: {e}")
 
 def create_app():
     app = TkinterDnD.Tk()
-    app.title("File Encryption/Decryption Tool")
-    app.geometry("500x500")
+    app.title("File Encryption/Decryption Tool - v2 (Secure)")
+    app.geometry("500x550")
     app.resizable(True, True)
 
-    img = Image.open("../image/main app/lock.png")
+    img = Image.open("./image/main app/lock.png")
     img = img.resize((128, 128))
-    img.save("../image/main app/lock_resized.png")
-    icon = PhotoImage(file="../image/main app/lock_resized.png")
+    img.save("./image/main app/lock_resized.png")
+    icon = PhotoImage(file="./image/main app/lock_resized.png")
     app.iconphoto(True, icon)
 
-    tk.Label(app, text="File Encryption/Decryption Tool", font=("Arial", 16)).pack(pady=10)
+    tk.Label(app, text="File Encryption/Decryption Tool - v2", font=("Arial", 16)).pack(pady=10)
 
-    tk.Label(app, text="Enter your secret string:").pack(pady=5)
+    tk.Label(app, text="Enter your secret password:").pack(pady=5)
     string_entry = tk.Entry(app, show="•", width=50)
     string_entry.pack(pady=5)
 
-    def encrypt_with_derived_key_and_nonce():
-        input_string = string_entry.get()
-        if not input_string:
-            messagebox.showwarning("Input Required", "You have to fill the string.")
-            return
-        key, nonce = derive_key_and_nonce(input_string)
-        encrypt_file(output_format="bin", key=key, nonce=nonce)
+    def set_current_password():
+        password = string_entry.get()
+        if not password:
+            messagebox.showwarning("Input Required", "You have to fill the password.")
+            return None
+        encrypt_file._current_password = password
+        decrypt_file._current_password = password
+        encrypt_folder._current_password = password
+        decrypt_archive_to_folder._current_password = password
+        return password
 
-    def decrypt_with_derived_key_and_nonce():
-        input_string = string_entry.get()
-        if not input_string:
-            messagebox.showwarning("Input Required", "You have to fill the string.")
-            return
-        key, nonce = derive_key_and_nonce(input_string)
-        decrypt_file(output_format="bin", key=key, nonce=nonce)
+    def encrypt_with_password():
+        if set_current_password():
+            encrypt_file()
 
-    tk.Button(app, text="Encrypt File", command=encrypt_with_derived_key_and_nonce, width=20, height=2).pack(pady=10)
-    tk.Button(app, text="Decrypt File", command=decrypt_with_derived_key_and_nonce, width=20, height=2).pack(pady=10)
+    def decrypt_with_password():
+        if set_current_password():
+            decrypt_file()
 
-    drop_box = tk.Label(app, text="Drag and Drop Files Here", relief="sunken", width=40, height=10)
+    def encrypt_folder_with_password():
+        if set_current_password():
+            encrypt_folder(None)
+
+    def decrypt_folder_with_password():
+        if set_current_password():
+            decrypt_archive_to_folder(None)
+
+    button_frame = tk.Frame(app)
+    button_frame.pack(pady=10)
+
+    tk.Button(button_frame, text="Encrypt File", command=encrypt_with_password, width=20, height=2).grid(row=0, column=0, padx=5, pady=5)
+    tk.Button(button_frame, text="Decrypt File", command=decrypt_with_password, width=20, height=2).grid(row=0, column=1, padx=5, pady=5)
+    tk.Button(button_frame, text="Encrypt Folder", command=encrypt_folder_with_password, width=20, height=2).grid(row=1, column=0, padx=5, pady=5)
+    tk.Button(button_frame, text="Decrypt Folder", command=decrypt_folder_with_password, width=20, height=2).grid(row=1, column=1, padx=5, pady=5)
+
+    drop_box = tk.Label(app, text="Drag and Drop Files/Folders Here", relief="sunken", width=40, height=10)
     drop_box.pack(pady=20)
 
     def drop(event):
-        file_path = event.data
-        if file_path:
-            input_string = string_entry.get()
-            if not input_string:
-                messagebox.showwarning("Input Required", "You have to fill the string.")
-                return
-            key, nonce = derive_key_and_nonce(input_string)
-            if messagebox.askyesno("Encrypt or Decrypt", "Do you want to encrypt the file?"):
-                encrypt_file(file_path, "bin", key, nonce)
+        file_path = event.data.strip()
+        if file_path.startswith("{") and file_path.endswith("}"):
+            file_path = file_path[1:-1]
+        
+        if not os.path.exists(file_path):
+            messagebox.showerror("Error", f"Path not found:\n{file_path}")
+            return
+
+        password = set_current_password()
+        if not password:
+            return
+
+        try:
+            if os.path.isdir(file_path):
+                if messagebox.askyesno("Encrypt Folder?", f"Encrypt this folder?\n{file_path}"):
+                    encrypt_folder(file_path)
             else:
-                decrypt_file(file_path, "bin", key, nonce)
+                if file_path.endswith(".cc20"):
+                    if messagebox.askyesno("Decrypt File?", f"Decrypt this file?\n{file_path}"):
+                        decrypt_file(file_path, "bin", None, None)
+                else:
+                    if messagebox.askyesno("Encrypt File?", f"Encrypt this file?\n{file_path}"):
+                        encrypt_file(file_path, "bin", None, None)
+        except EncDecError as e:
+            messagebox.showerror("Error", str(e))
+        except Exception as e:
+            messagebox.showerror("Error", f"Unexpected error: {e}")
 
     drop_box.drop_target_register(DND_FILES)
     drop_box.dnd_bind('<<Drop>>', drop)

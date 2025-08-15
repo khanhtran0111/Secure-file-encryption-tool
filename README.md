@@ -1,89 +1,124 @@
-# Chacha20 application in secure file encryption system
+# Secure file encryption tool
 
 ## Introduction
 
-This project implements a secure file encryption system using the ChaCha20 encryption algorithm. It provides a reliable and efficient way to encrypt and decrypt files, ensuring data confidentiality and integrity. The application is designed to prioritize speed and security, making it suitable for protecting sensitive information in various environments.
+This project implements a secure file encryption system using the ChaCha20-Poly1305 AEAD encryption algorithm with Scrypt key derivation. Version 2 provides significant security improvements over the original implementation, including proper authentication, secure key derivation, and support for folder encryption using a tar-then-encrypt approach.
 
-## Report
+## Key Security Features
 
-Read more: [Chacha20 application in secure file encryption system on personal computer](UET_report.pdf)
+- **AEAD Encryption**: ChaCha20-Poly1305 provides both confidentiality and authenticity
+- **Secure KDF**: Scrypt (N=2^15, r=8, p=1) replaces simple SHA-256 hashing  
+- **Per-file nonces**: Each file uses a unique random 8-byte nonce prefix
+- **Chunked processing**: 1MB chunks with per-chunk nonce counters for large files
+- **Header authentication**: File metadata protected as Additional Authenticated Data (AAD)
+- **Tamper detection**: Any modification to encrypted files is immediately detected
+- **Folder support**: Tar-then-encrypt approach for secure folder encryption
+
+## File Format (.cc20)
+
+Encrypted files use the `.cc20` extension with this structure:
+```
+Magic: "CC20" (4 bytes)
+Version: 2 (1 byte)  
+KDF ID: 1 (Scrypt) (1 byte)
+Algorithm ID: 1 (ChaCha20-Poly1305) (1 byte)
+Flags: 0 (1 byte)
+KDF params length: uint16 (2 bytes)
+KDF params: JSON blob (salt, n, r, p)
+Nonce prefix length: uint8 (1 byte) 
+Nonce prefix: 8 bytes
+Chunk size: uint32 (4 bytes)
+Data: encrypted chunks (4-byte length + encrypted data per chunk)
+```
 
 ## How to Use
 
 ### Prerequisites
-- Python 3.12
-- C++ compiler (for compiling the C++ code)
-- Install libraries:
-    ```sh
-    pip install pycryptodome
-    pip install tk
+- Python 3.12+
+- Required libraries:
+    ```bash
+    pip install cryptography tkinterdnd2 pillow
     ```
 
 ### Setup
 1. Clone the repository:
-    ```sh
-    git clone https://github.com/khanhtran0111/Secure-file-encryption-system.git
+    ```bash
+    git clone https://github.com/khanhtran0111/Secure-file-encryption-tool.git
     cd Secure-file-encryption-system
     ```
 
-2. Compile the C++ code:
-    ```sh
-    g++ -o chacha20_file_processor src/chacha20.cpp
+2. Install dependencies:
+    ```bash
+    pip install cryptography tkinterdnd2 pillow
     ```
 
 ### Usage
 
-#### Encrypt a File
-1. Run the Python application:
-    ```sh
+#### GUI Application (Recommended)
+1. Run the graphical interface:
+    ```bash
     python src/app.py
     ```
 
-2. In the GUI, select the file you want to encrypt.
-3. Enter your secret key, which will be converted to the encryption key (32 bytes) and nonce (12 bytes).
-4. Choose the output format (binary).
-5. Click the "Encrypt" button.
+2. Enter your secret password in the input field
+3. Choose from the available options:
+   - **Encrypt File**: Select a file to encrypt (output: `.cc20`)
+   - **Decrypt File**: Select a `.cc20` file to decrypt  
+   - **Encrypt Folder**: Select a folder to encrypt as a single archive
+   - **Decrypt Folder**: Select a `.cc20` archive to extract
 
-#### Decrypt a File
-1. Run the Python application:
-    ```sh
-    python src/app.py
-    ```
+4. **Drag & Drop**: Simply drag files or folders onto the application window
+   - Files → Asks if you want to encrypt
+   - `.cc20` files → Asks if you want to decrypt
+   - Folders → Asks if you want to encrypt
 
-2. In the GUI, select the file you want to decrypt.
-3. Enter your previous secret key for encryption, which will be converted to the encryption key (32 bytes) and nonce (12 bytes).
-4. Choose the output format (the format before encryption).
-5. Click the "Decrypt" button.
 
-### Example
+### Security Notes
 
-For example, I have an image that needs to be encrypted:
+- **Password Security**: Use strong, unique passwords. The same password will always produce the same encryption key due to deterministic Scrypt parameters.
+- **File Integrity**: Any tampering with encrypted files will be detected during decryption.
+- **Secure Deletion**: Consider securely wiping original files after encryption if they contain sensitive data.
+- **Backup**: Keep secure backups of both encrypted files AND passwords.
 
-![Max Verstappen image](rm/1.png)
+### Example Workflow
 
-Next, I run the app:
+1. **Encrypt a Document:**
+   ```bash
+   python src/app.py
+   # Enter password: "my_secure_password_123"
+   # Select "Encrypt File" → choose document.pdf
+   # Result: document.pdf.cc20
+   ```
 
-![Run app](rm/2.png)
+2. **Encrypt a Project Folder:**
+   ```bash
+   # Drag folder "MyProject" onto the app window
+   # Choose "Encrypt folder" → save as MyProject.cc20  
+   # Result: Single encrypted archive containing all files
+   ```
 
-Now, you can see the main app. There is a box for you to enter your secret string for making the key and nonce for the algorithm. There are two buttons, `Encrypt File` and `Decrypt File`, for actions and a box where you can drag and drop your specific file.
+3. **Decrypt and Extract:**
+   ```bash
+   # Drag MyProject.cc20 onto the app window
+   # Choose "Decrypt folder" → select output directory
+   # Result: MyProject folder extracted with all original files
+   ```
 
-![App](rm/3.png)
+## Migration from v1
 
-I will put my secret string in the box. For example, my string is `simply lovely`, then I choose `Encrypt File` and pick the file which is going to be encrypted.
+If you have files encrypted with the original version (using the C++ executable), they can still be decrypted using the legacy method. However, we strongly recommend re-encrypting important files with v2 for improved security.
 
-![Example](rm/4.png)
+## What's New in v2
 
-And done!
+- ✅ **Authenticated encryption** prevents tampering
+- ✅ **Secure key derivation** using Scrypt instead of raw SHA-256
+- ✅ **Folder encryption** via tar-then-encrypt  
+- ✅ **Per-file random nonces** eliminate nonce reuse
+- ✅ **Chunked processing** supports large files efficiently
+- ✅ **Header authentication** protects metadata
+- ✅ **Standard library** using `cryptography` instead of custom C++
+- ✅ **Cross-platform** works on any system with Python
 
-![Done](rm/5.png)
+## License
 
-The information after being encrypted will be saved in a file with the extension `.txt`.
-
-![Encrypted file](rm/6.png)
-
-If I want to see what that file is, I enter the secret string used for encryption, choose `Decrypt File`, and enter the name with the original file format (.jpg, .pdf, etc.).
-
-Boom, now I have two images, one is the original, and one is decrypted from the encrypted txt file.
-
-![Decrypted image 1](rm/8.png)
-![Decrypted image 2](rm/9.png)
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
